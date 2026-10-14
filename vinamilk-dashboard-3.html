@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="vi">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{margin:0}</style>
+<title>VNM Task Tracker</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Bố cục: tiêu đề + KPI trên cùng, hai biểu đồ, ba khối tiến độ/deadline, bảng task theo giai đoạn */
+:root{
+  --bg:#f2f5fa;--surface:#ffffff;--surface2:#f7f9fd;--fg:#0e2140;--muted:#5a6d8c;--line:#dce4f0;
+  --accent:#1d5fd0;--accent-strong:#0f3f9a;--accent-soft:#e7efff;--on-accent:#ffffff;
+  --b1:#0f3f9a;--b2:#1d5fd0;--b3:#3b82f0;--b4:#6ea2f5;--b5:#9cc1f8;
+  --todo:#7d90b0;--progress:#2f7bf0;--done:#17935f;--over:#d23f3f;
+  --todo-bg:#edf1f8;--progress-bg:#e4eeff;--done-bg:#dff5ea;--over-bg:#fde8e8;
+  --todo-fg:#4d6288;--progress-fg:#1b55c0;--done-fg:#0d6e47;--over-fg:#b02a2a;
+  --prh-bg:#0f3f9a;--prh-fg:#ffffff;
+  --hero-bg:#123f94;--hero-fg:#ffffff;--hero-sub:rgba(255,255,255,.75);--hero-track:rgba(255,255,255,.22);--hero-fill:#a9ccff;
+  --shadow:0 1px 2px rgba(15,40,90,.06),0 4px 14px rgba(15,40,90,.05);
+  --font:'Open Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0a1322;--surface:#111d33;--surface2:#0e1a2e;--fg:#e5ecf8;--muted:#93a6c6;--line:#223756;
+  --accent:#5b9bff;--accent-strong:#8db8ff;--accent-soft:#172c52;--on-accent:#08142b;
+  --b1:#8db8ff;--b2:#6ea6ff;--b3:#4f8ef5;--b4:#3a78e0;--b5:#2a62c4;
+  --todo:#8ea2c4;--progress:#5b9bff;--done:#3fc58a;--over:#ff6b6b;
+  --todo-bg:#1a2943;--progress-bg:#16305c;--done-bg:#123a2c;--over-bg:#4a1f26;
+  --todo-fg:#b2c1dc;--progress-fg:#9cc2ff;--done-fg:#6fdcaa;--over-fg:#ff9a9a;
+  --prh-bg:#8db8ff;--prh-fg:#0a1322;
+  --hero-bg:#14305f;--hero-fg:#eaf1ff;--hero-sub:rgba(234,241,255,.72);--hero-track:rgba(255,255,255,.14);--hero-fill:#6ea6ff;
+  --shadow:0 1px 2px rgba(0,0,0,.3);color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0a1322;--surface:#111d33;--surface2:#0e1a2e;--fg:#e5ecf8;--muted:#93a6c6;--line:#223756;
+  --accent:#5b9bff;--accent-strong:#8db8ff;--accent-soft:#172c52;--on-accent:#08142b;
+  --b1:#8db8ff;--b2:#6ea6ff;--b3:#4f8ef5;--b4:#3a78e0;--b5:#2a62c4;
+  --todo:#8ea2c4;--progress:#5b9bff;--done:#3fc58a;--over:#ff6b6b;
+  --todo-bg:#1a2943;--progress-bg:#16305c;--done-bg:#123a2c;--over-bg:#4a1f26;
+  --todo-fg:#b2c1dc;--progress-fg:#9cc2ff;--done-fg:#6fdcaa;--over-fg:#ff9a9a;
+  --prh-bg:#8db8ff;--prh-fg:#0a1322;
+  --hero-bg:#14305f;--hero-fg:#eaf1ff;--hero-sub:rgba(234,241,255,.72);--hero-track:rgba(255,255,255,.14);--hero-fill:#6ea6ff;
+  --shadow:0 1px 2px rgba(0,0,0,.3);color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 var(--font);padding-block:24px 40px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1360px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1,h2,h3,p{margin:0}
+h1{font-size:24px;line-height:1.25;font-weight:700;text-wrap:balance}
+h2{font-size:15px;font-weight:700}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:4px}
+.muted,.sub{color:var(--muted)}
+.top>div:first-child{flex:1;min-width:240px}
+[contenteditable]{border-radius:6px;outline:1px dashed transparent;outline-offset:4px;cursor:text}
+[contenteditable]:hover{outline-color:var(--line)}
+[contenteditable]:focus{outline:2px solid var(--accent)}
+[contenteditable]:empty::before{content:attr(data-ph);color:var(--muted)}
+#colList{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+#colList li{display:flex;align-items:center;gap:8px}
+#colList input[type=checkbox]{width:18px;height:18px;flex:none;accent-color:var(--accent)}
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{font-weight:600;border:1px solid var(--line);background:var(--surface);padding:9px 16px;border-radius:8px;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);padding:10px 20px;box-shadow:0 4px 12px rgba(29,95,208,.28)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.sm{padding:5px 10px;font-size:12px}
+.btn.danger,.icon.danger{background:var(--over-bg);color:var(--over-fg);border-color:var(--over)}
+.icon{border:1px solid transparent;background:transparent;color:var(--muted);border-radius:6px;min-width:32px;height:30px;cursor:pointer;font-size:12px;font-weight:600}
+.icon:hover:not(:disabled){background:var(--surface2);border-color:var(--line)}
+.icon:disabled{opacity:.35;cursor:default}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;box-shadow:var(--shadow);min-width:0}
+.card h2{margin-bottom:14px}
+.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.9fr);gap:16px}
+.overall{background:var(--hero-bg);color:var(--hero-fg);border-color:transparent;display:flex;flex-direction:column;justify-content:center;gap:10px}
+.overall .lbl{font-size:13px;font-weight:600;color:var(--hero-sub)}
+.big{font-size:56px;line-height:1;font-weight:700;font-variant-numeric:tabular-nums}
+.overall .bar{background:var(--hero-track)}.overall .bar i{background:var(--hero-fill)}
+.overall .sub{color:var(--hero-sub);font-size:13px}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;justify-content:center;gap:6px;box-shadow:var(--shadow)}
+.tile .lbl{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--muted)}
+.tile .lbl i{width:9px;height:9px;border-radius:50%;background:var(--c)}
+.tile b{font-size:34px;line-height:1.1;font-weight:700;font-variant-numeric:tabular-nums}
+.tile.t-over b{color:var(--over-fg)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.chart{position:relative;height:250px}
+.bar{height:8px;background:var(--line);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .4s}
+.bar.lg{height:12px}.bar.sm{width:96px;height:6px;flex:none}
+.pb{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}.pb:last-child{margin-bottom:0}
+.pbh{display:flex;justify-content:space-between;gap:12px;font-weight:600}
+.pbh span{min-width:0;overflow-wrap:anywhere}
+.pb small,.list small{color:var(--muted);font-size:12px}
+.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.list li{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.list li:first-child{padding-top:0}.list li:last-child{border-bottom:0;padding-bottom:0}
+.list li>div{display:flex;flex-direction:column;min-width:0}
+.list b{font-weight:600;overflow-wrap:anywhere}
+.none{color:var(--muted);padding:8px 0}
+.tag{flex:none;font-size:12px;font-weight:600;padding:2px 9px;border-radius:99px;background:var(--todo-bg);color:var(--todo-fg);white-space:nowrap}
+.tag.soon{background:var(--progress-bg);color:var(--progress-fg)}.tag.late{background:var(--over-bg);color:var(--over-fg)}
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.filters select{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 10px;min-width:0;max-width:100%}
+.filters .count{margin-left:auto;color:var(--muted);font-size:13px}
+.head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.head h2{margin:0}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;min-width:640px}
+th{text-align:left;font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:10px 8px;background:var(--surface2);border-bottom:1px solid var(--line)}
+td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+tr.ph td{background:var(--accent-soft);padding:8px}
+.phr{display:flex;align-items:center;gap:12px}
+.idx{flex:none;width:24px;height:24px;border-radius:50%;background:var(--accent);color:var(--on-accent);font-size:12px;font-weight:700;display:grid;place-items:center}
+.phname{font-weight:700;font-size:14px;flex:1;min-width:120px}
+.meta{color:var(--muted);font-size:12px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.cell{width:100%;border:1px solid transparent;background:transparent;border-radius:6px;padding:5px 7px;min-width:0}
+.cell:hover{border-color:var(--line)}
+.cell:focus{border-color:var(--accent);background:var(--surface);outline:2px solid var(--accent-soft)}
+.nm{font-weight:600}.ds{font-size:12px;color:var(--muted)}
+.rel{display:block;font-size:11px;color:var(--muted);padding:0 7px}.rel.late{color:var(--over-fg);font-weight:600}
+select.pill{appearance:none;border:0;border-radius:99px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;width:100%}
+select.pill:hover{filter:brightness(.97)}
+.s-todo{background:var(--todo-bg);color:var(--todo-fg)}.s-progress{background:var(--progress-bg);color:var(--progress-fg)}
+.s-done{background:var(--done-bg);color:var(--done-fg)}.s-overdue{background:var(--over-bg);color:var(--over-fg)}
+.p-high{background:var(--prh-bg);color:var(--prh-fg)}.p-med{background:var(--accent-soft);color:var(--accent)}.p-low{background:var(--todo-bg);color:var(--todo-fg)}
+.empty{color:var(--muted);text-align:center;padding:14px}
+.foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;color:var(--muted);font-size:12px}
+.ov{position:fixed;inset:0;background:rgba(8,20,43,.55);display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;z-index:10;
+  padding:max(24px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-left,0px)) 24px max(16px,env(safe-area-inset-right,0px))}
+.modal{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;width:100%;max-width:560px;display:flex;flex-direction:column;gap:14px;margin:auto 0;box-shadow:0 20px 50px rgba(0,0,0,.3)}
+.modal h2{font-size:18px;margin:0}
+.fr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.fr .full{grid-column:1/-1}
+label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600;color:var(--muted)}
+label input,label select{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:8px;padding:8px 10px;font-weight:400;font-size:14px;width:100%;min-width:0}
+.mact{display:flex;justify-content:flex-end;gap:10px;align-items:center}
+.err{color:var(--over-fg);font-size:12px;margin-right:auto}
+#phList{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+#phList li{display:flex;align-items:center;gap:6px}
+.add{display:flex;gap:8px}.add input{flex:1;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 10px;min-width:0}
+@media (max-width:1000px){.hero,.grid2{grid-template-columns:minmax(0,1fr)}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.filters .count{margin-left:0;width:100%}}
+@media (max-width:560px){h1{font-size:20px}.big{font-size:44px}.fr{grid-template-columns:minmax(0,1fr)}}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <p class="eyebrow" id="mEye" contenteditable="true" spellcheck="false" data-ph="Nhãn dự án" title="Bấm để sửa"></p>
+      <h1 id="mTitle" contenteditable="true" spellcheck="false" data-ph="Tên dự án" title="Bấm để đổi tên dự án"></h1>
+      <p class="sub" id="today"></p>
+    </div>
+    <div class="actions">
+      <button class="btn" id="bPh" type="button">Quản lý giai đoạn</button>
+      <button class="btn primary" id="bAdd" type="button">+ Thêm task</button>
+    </div>
+  </header>
+
+  <section class="hero" aria-label="Tổng quan dự án">
+    <div class="card overall">
+      <p class="lbl">Hoàn thành toàn dự án</p>
+      <div class="big" id="kPct">0%</div>
+      <div class="bar lg"><i id="kBar"></i></div>
+      <p class="sub" id="kSub"></p>
+    </div>
+    <div class="stats" id="stats"></div>
+  </section>
+
+  <section class="card" aria-label="Tiến độ theo giai đoạn">
+    <h2>Tiến độ theo giai đoạn</h2>
+    <div class="chart" id="phWrap"><canvas id="cPh" role="img" aria-label="Biểu đồ số task hoàn thành và phần trăm theo giai đoạn"></canvas></div>
+  </section>
+
+  <section class="grid2">
+    <div class="card"><h2>Deadline sắp tới</h2><ul class="list" id="upList"></ul></div>
+    <div class="card"><h2>Task quá hạn</h2><ul class="list" id="odList"></ul></div>
+  </section>
+
+  <section class="card" aria-label="Danh sách task">
+    <div class="head"><h2>Danh sách task theo giai đoạn</h2><div class="actions"><button class="btn" id="bCol" type="button">Cột hiển thị</button><button class="btn" id="bAddPh" type="button">+ Thêm giai đoạn</button><button class="btn primary" id="bAdd2" type="button">+ Thêm task</button></div></div>
+    <div class="filters">
+      <select id="fPh" aria-label="Lọc theo giai đoạn"></select>
+      <select id="fOw" aria-label="Lọc theo người phụ trách"></select>
+      <select id="fSt" aria-label="Lọc theo trạng thái"></select>
+      <select id="fDu" aria-label="Lọc theo deadline"></select>
+      <button class="btn sm" id="fClear" type="button">Xóa bộ lọc</button>
+      <span class="count" id="fCount"></span>
+    </div>
+    <div class="tw">
+      <table>
+        <thead id="th"></thead>
+        <tbody id="tb"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="foot"><span>Dữ liệu tự lưu trong trình duyệt (localStorage). Bấm vào tiêu đề, tên giai đoạn hoặc ô bất kỳ để sửa trực tiếp.</span><button class="btn sm" id="bReset" type="button">Khôi phục dữ liệu mẫu</button></footer>
+</div>
+
+<datalist id="owners"></datalist>
+
+<div class="ov" id="mTask" hidden>
+  <form class="modal" id="fTask">
+    <h2>Thêm task mới</h2>
+    <div class="fr">
+      <label class="full">Tên task<input id="tName" required maxlength="140" placeholder="VD: Định giá DCF"></label>
+      <label class="full">Mô tả<input id="tDesc" maxlength="300" placeholder="Nội dung cần thực hiện"></label>
+      <label>Giai đoạn<select id="tPh"></select></label>
+      <label>Người phụ trách<input id="tOwner" list="owners" placeholder="Tên người phụ trách"></label>
+      <label>Ngày bắt đầu<input id="tStart" type="date"></label>
+      <label>Deadline<input id="tDue" type="date"></label>
+      <label>Trạng thái<select id="tSt"></select></label>
+      <label>Mức ưu tiên<select id="tPr"></select></label>
+      <label class="full">Ghi chú<input id="tNote" maxlength="300" placeholder="Ghi chú thêm"></label>
+    </div>
+    <div class="mact"><span class="err" id="tErr"></span><button class="btn" type="button" data-close>Hủy</button><button class="btn primary" type="submit">Thêm task</button></div>
+  </form>
+</div>
+
+<div class="ov" id="mPh" hidden>
+  <div class="modal">
+    <h2>Quản lý giai đoạn</h2>
+    <ul id="phList"></ul>
+    <div class="add"><input id="newPh" maxlength="100" placeholder="Tên giai đoạn mới" aria-label="Tên giai đoạn mới"><button class="btn" id="addPh" type="button">Thêm giai đoạn</button></div>
+    <div class="mact"><button class="btn primary" type="button" data-close>Xong</button></div>
+  </div>
+</div>
+
+<div class="ov" id="mCol" hidden>
+  <div class="modal">
+    <h2>Cột hiển thị trên bảng</h2>
+    <p class="muted">Tích để hiện hoặc ẩn cột, đổi tên cột trực tiếp, hoặc thêm cột riêng của bạn.</p>
+    <ul id="colList"></ul>
+    <div class="add"><input id="newCol" maxlength="60" placeholder="Tên cột mới" aria-label="Tên cột mới"><button class="btn" id="addCol" type="button">Thêm cột</button></div>
+    <div class="mact"><button class="btn primary" type="button" data-close>Xong</button></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+(()=>{
+const KEY='vnm-task-tracker-v1';
+const ST={todo:'To do',progress:'In progress',done:'Done',overdue:'Overdue'};
+const PR={high:'Cao',med:'Trung bình',low:'Thấp'};
+const DU=[['','Mọi deadline'],['overdue','Đã quá hạn'],['today','Hôm nay'],['w7','Trong 7 ngày tới'],['m30','Trong 30 ngày tới']];
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const today=()=>iso(new Date());
+const addDays=n=>{const d=new Date();d.setDate(d.getDate()+n);return iso(d)};
+const diff=(a,b)=>Math.round((Date.parse(b)-Date.parse(a))/864e5);
+const fmt=d=>d?d.slice(8)+'/'+d.slice(5,7):'';
+const uid=()=>Math.random().toString(36).slice(2,9);
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const opt=(m,v)=>Object.keys(m).map(k=>`<option value="${k}"${k===v?' selected':''}>${m[k]}</option>`).join('');
+const rel=due=>{const d=diff(today(),due);return d<0?`Trễ ${-d} ngày`:d===0?'Hôm nay':`Còn ${d} ngày`};
+
+const defCols=()=>[['name','Task / Mô tả'],['owner','Phụ trách'],['start','Bắt đầu'],['due','Deadline'],['status','Trạng thái'],['priority','Ưu tiên'],['note','Ghi chú']].map(c=>({id:c[0],label:c[1],vis:true}));
+function seed(){
+  const P=['Planning','Data collection','Phân tích và định giá doanh nghiệp','Phân tích rủi ro và triển vọng đầu tư','Tổng hợp báo cáo và đưa ra khuyến nghị đầu tư'].map((name,i)=>({id:'p'+(i+1),name}));
+  const T=[
+    [1,'Xác định phạm vi và mục tiêu phân tích','Chốt câu hỏi nghiên cứu, khung thời gian và tiêu chí khuyến nghị','Tôi',-21,-17,'done','high','Đã thống nhất với sếp'],
+    [1,'Lập kế hoạch và phân công công việc','Chia việc theo giai đoạn, đặt mốc kiểm tra tiến độ hằng tuần','Tôi',-20,-16,'done','med',''],
+    [1,'Xây dựng khung phân tích','Chọn phương pháp định giá và danh sách nguồn dữ liệu','Tôi',-18,-14,'done','high','Dùng DCF kết hợp so sánh P/E, P/B'],
+    [2,'Thu thập báo cáo tài chính 2021–2025','BCTC hợp nhất, thuyết minh và báo cáo thường niên của VNM','Tôi',-16,-9,'done','high','Nguồn: IR Vinamilk, HOSE'],
+    [2,'Thu thập dữ liệu thị trường sữa Việt Nam','Quy mô thị trường, thị phần, tăng trưởng theo phân khúc','Đồng nghiệp',-14,-3,'progress','high','Còn thiếu số liệu thị phần 2025, cần xác nhận nguồn'],
+    [2,'Thu thập dữ liệu đối thủ cạnh tranh','TH True Milk, FrieslandCampina, Nutifood: doanh thu, biên lợi nhuận','Tôi',-10,2,'progress','med',''],
+    [2,'Thu thập giá cổ phiếu VNM và VN-Index','Chuỗi giá 5 năm, khối lượng, cổ tức đã chi trả','Tôi',-8,-1,'done','med',''],
+    [2,'Làm sạch và chuẩn hóa dữ liệu','Thống nhất đơn vị, kỳ báo cáo; kiểm tra số liệu bất thường','Tôi',-5,4,'progress','med','Đang đối chiếu BCTC với số liệu IR'],
+    [3,'Phân tích tỷ số tài chính','ROE, ROA, biên lợi nhuận, thanh khoản, đòn bẩy','Tôi',-2,6,'progress','high',''],
+    [3,'Phân tích DuPont và cơ cấu doanh thu','Doanh thu theo ngành hàng và thị trường nội địa/xuất khẩu','Tôi',0,8,'todo','med',''],
+    [3,'Định giá DCF','Dự phóng dòng tiền, WACC, tăng trưởng dài hạn','Tôi',3,12,'todo','high','Cần sếp duyệt giả định WACC'],
+    [3,'Định giá so sánh P/E, P/B, EV/EBITDA','So sánh với doanh nghiệp cùng ngành trong khu vực','Tôi',5,13,'todo','med',''],
+    [4,'Phân tích rủi ro nguyên liệu đầu vào','Giá sữa bột thế giới, tỷ giá, chi phí logistics','Tôi',9,15,'todo','med',''],
+    [4,'Phân tích SWOT và 5 lực lượng Porter','Tổng hợp lợi thế cạnh tranh và áp lực ngành','Tôi',8,14,'todo','low',''],
+    [4,'Phân tích độ nhạy và kịch bản','Ba kịch bản: cơ sở, lạc quan, bi quan','Tôi',12,18,'todo','high',''],
+    [4,'Đánh giá triển vọng ngành và chiến lược','Xu hướng tiêu dùng, xuất khẩu, mở rộng danh mục sản phẩm','Tôi',10,17,'todo','low',''],
+    [5,'Viết báo cáo đầu tư','Tóm tắt điều hành, luận điểm đầu tư, phụ lục','Tôi',16,23,'todo','high',''],
+    [5,'Đưa ra khuyến nghị và giá mục tiêu','Kết luận Mua/Giữ/Bán dựa trên kết quả định giá','Tôi',20,25,'todo','high',''],
+    [5,'Rà soát số liệu và trích nguồn','Kiểm tra chéo bảng biểu, chú thích nguồn','Đồng nghiệp',22,26,'todo','med',''],
+    [5,'Trình bày với sếp và chỉnh sửa','Nhận góp ý, hoàn thiện bản cuối','Sếp',26,30,'todo','high','']
+  ];
+  return {meta:{eyebrow:'VNM · Công ty Cổ phần Sữa Việt Nam',title:'Theo dõi tiến độ phân tích đầu tư Vinamilk'},cols:defCols(),phases:P,tasks:T.map(r=>({id:uid(),phase:'p'+r[0],name:r[1],desc:r[2],owner:r[3],start:addDays(r[4]),due:addDays(r[5]),status:r[6],priority:r[7],note:r[8],extra:{}}))};
+}
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&Array.isArray(s.phases)&&Array.isArray(s.tasks)){const d=seed();s.meta=s.meta||d.meta;s.cols=Array.isArray(s.cols)?s.cols:defCols();s.tasks.forEach(k=>{k.extra=k.extra||{}});return s}}catch(e){}return seed()}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
+let state=load(),filters={phase:'',owner:'',status:'',due:''};
+
+function normalize(){const t=today();state.tasks.forEach(k=>{if(k.status==='done')return;if(k.due&&k.due<t)k.status='overdue';else if(k.status==='overdue')k.status='todo'})}
+const pct=l=>l.length?Math.round(l.filter(k=>k.status==='done').length/l.length*100):0;
+const phName=id=>(state.phases.find(p=>p.id===id)||{}).name||'';
+
+/* Biểu đồ */
+let cPh;
+function renderCharts(){
+  if(!window.Chart)return;
+  const T=state.tasks;
+  Chart.defaults.font.family="'Open Sans',system-ui,sans-serif";Chart.defaults.color=css('--muted');
+  const info=state.phases.map(p=>{const l=T.filter(k=>k.phase===p.id);return {done:l.filter(k=>k.status==='done').length,total:l.length,pct:pct(l)}});
+  const labels=state.phases.map((p,i)=>`${i+1}. ${p.name}`),blues=state.phases.map((p,i)=>css('--b'+((i%5)+1)));
+  $('#phWrap').style.height=Math.max(180,state.phases.length*48+44)+'px';
+  if(!cPh)cPh=new Chart($('#cPh'),{type:'bar',data:{labels:[],datasets:[{data:[],borderRadius:5,maxBarThickness:26}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,animation:{duration:300},layout:{padding:{right:110}},
+      plugins:{legend:{display:false},tooltip:{callbacks:{title:i=>i[0].label,label:c=>{const m=cPh.$info[c.dataIndex];return ` ${m.done}/${m.total} task hoàn thành (${m.pct}%)`}}}},
+      scales:{x:{min:0,max:100,ticks:{stepSize:25,callback:v=>v+'%'},grid:{}},y:{grid:{display:false},ticks:{callback(v){const l=this.getLabelForValue(v);return l.length>34?l.slice(0,33)+'…':l}}}}},
+    plugins:[{id:'val',afterDatasetsDraw(ch){const x=ch.ctx;x.save();x.fillStyle=css('--fg');x.font="600 12px 'Open Sans',sans-serif";x.textBaseline='middle';
+      ch.getDatasetMeta(0).data.forEach((b,i)=>{const m=ch.$info&&ch.$info[i];if(m)x.fillText(`${m.done}/${m.total} · ${m.pct}%`,b.x+8,b.y)});x.restore()}}]});
+  cPh.$info=info;cPh.data.labels=labels;cPh.data.datasets[0].data=info.map(m=>m.pct);cPh.data.datasets[0].backgroundColor=blues;
+  cPh.options.scales.x.grid.color=css('--line');cPh.update();
+}
+
+/* Dashboard */
+function renderDash(){
+  const T=state.tasks,n=T.length,c=s=>T.filter(k=>k.status===s).length,d=c('done'),p=c('progress'),o=c('overdue'),P=pct(T),t=today();
+  $('#kPct').textContent=P+'%';$('#kBar').style.width=P+'%';
+  $('#kSub').textContent=`${d}/${n} task hoàn thành · ${state.phases.length} giai đoạn`;
+  $('#stats').innerHTML=[['Tổng số task',n,'--b2',''],['Hoàn thành',d,'--done',''],['Đang thực hiện',p,'--progress',''],['Quá hạn',o,'--over',o?'t-over':'']]
+    .map(r=>`<div class="tile ${r[3]}"><span class="lbl"><i style="--c:var(${r[2]})"></i>${r[0]}</span><b>${r[1]}</b></div>`).join('');
+  const li=(k,cls,txt)=>`<li><div><b>${esc(k.name)}</b><small>${esc(phName(k.phase))} · ${esc(k.owner||'Chưa phân công')} · ${fmt(k.due)}</small></div><span class="tag ${cls}">${txt}</span></li>`;
+  const up=T.filter(k=>k.status!=='done'&&k.status!=='overdue'&&k.due&&k.due>=t).sort((a,b)=>a.due.localeCompare(b.due)).slice(0,6);
+  const od=T.filter(k=>k.status==='overdue').sort((a,b)=>a.due.localeCompare(b.due));
+  $('#upList').innerHTML=up.length?up.map(k=>li(k,diff(t,k.due)<=3?'soon':'',rel(k.due))).join(''):'<li class="none">Không có deadline sắp tới.</li>';
+  $('#odList').innerHTML=od.length?od.map(k=>li(k,'late',rel(k.due))).join(''):'<li class="none">Không có task quá hạn.</li>';
+  renderCharts();
+}
+
+/* Bộ lọc */
+function renderFilters(){
+  const set=(id,key,opts)=>{const el=$(id);el.innerHTML=opts.map(o=>`<option value="${esc(o[0])}">${esc(o[1])}</option>`).join('');el.value=filters[key];filters[key]=el.value};
+  const owners=[...new Set(state.tasks.map(k=>k.owner).filter(Boolean))].sort();
+  set('#fPh','phase',[['','Tất cả giai đoạn']].concat(state.phases.map((p,i)=>[p.id,`${i+1}. ${p.name}`])));
+  set('#fOw','owner',[['','Mọi người phụ trách']].concat(owners.map(o=>[o,o])));
+  set('#fSt','status',[['','Mọi trạng thái']].concat(Object.keys(ST).map(k=>[k,ST[k]])));
+  set('#fDu','due',DU);
+  $('#owners').innerHTML=owners.map(o=>`<option value="${esc(o)}">`).join('');
+}
+function dueMatch(k){const t=today(),f=filters.due;if(!f)return true;if(f==='overdue')return k.status==='overdue';if(!k.due)return false;
+  return f==='today'?k.due===t:f==='w7'?(k.due>=t&&k.due<=addDays(7)):(k.due>=t&&k.due<=addDays(30))}
+
+/* Bảng task */
+const COLW={name:'27%',owner:'11%',start:'128px',due:'140px',status:'124px',priority:'112px',note:''};
+const visCols=()=>state.cols.filter(c=>c.vis);
+function cellHtml(c,k){
+  switch(c.id){
+    case 'name':return `<td><input class="cell nm" data-f="name" value="${esc(k.name)}" aria-label="Tên task"><input class="cell ds" data-f="desc" value="${esc(k.desc)}" placeholder="Mô tả" aria-label="Mô tả"></td>`;
+    case 'owner':return `<td><input class="cell" data-f="owner" list="owners" value="${esc(k.owner)}" placeholder="Người phụ trách" aria-label="Người phụ trách"></td>`;
+    case 'start':return `<td><input class="cell" type="date" data-f="start" value="${esc(k.start)}" aria-label="Ngày bắt đầu"></td>`;
+    case 'due':return `<td><input class="cell" type="date" data-f="due" value="${esc(k.due)}" aria-label="Deadline"><span class="rel ${k.status==='overdue'?'late':''}">${k.due&&k.status!=='done'?rel(k.due):''}</span></td>`;
+    case 'status':return `<td><select class="pill s-${k.status}" data-f="status" aria-label="Trạng thái">${opt(ST,k.status)}</select></td>`;
+    case 'priority':return `<td><select class="pill p-${k.priority}" data-f="priority" aria-label="Mức ưu tiên">${opt(PR,k.priority)}</select></td>`;
+    case 'note':return `<td><input class="cell" data-f="note" value="${esc(k.note)}" placeholder="Ghi chú" aria-label="Ghi chú"></td>`;
+    default:return `<td><input class="cell" data-x="${c.id}" value="${esc((k.extra||{})[c.id])}" aria-label="${esc(c.label)}"></td>`;
+  }
+}
+const rowHtml=k=>`<tr data-row="${k.id}">${visCols().map(c=>cellHtml(c,k)).join('')}<td><button class="icon" data-del="${k.id}" type="button" title="Xóa task" aria-label="Xóa task">✕</button></td></tr>`;
+function renderHead(){
+  const v=visCols();
+  $('#th').innerHTML='<tr>'+v.map(c=>`<th${COLW[c.id]?` style="width:${COLW[c.id]}"`:''}>${esc(c.label)}</th>`).join('')+'<th style="width:70px"></th></tr>';
+  $('#tb').closest('table').style.minWidth=Math.max(640,v.length*150+70)+'px';
+}
+function renderTable(){
+  const f=filters,filtering=Object.keys(f).some(k=>f[k]),span=visCols().length+1;
+  const match=k=>(!f.phase||k.phase===f.phase)&&(!f.owner||k.owner===f.owner)&&(!f.status||k.status===f.status)&&dueMatch(k);
+  let html='',shown=0;
+  state.phases.forEach((p,i)=>{
+    if(f.phase&&f.phase!==p.id)return;
+    const all=state.tasks.filter(k=>k.phase===p.id),list=all.filter(match);
+    if(filtering&&!list.length)return;
+    shown+=list.length;
+    html+=`<tr class="ph"><td colspan="${span}"><div class="phr"><span class="idx">${i+1}</span><input class="cell phname" data-ph="${p.id}" value="${esc(p.name)}" aria-label="Tên giai đoạn"><span class="meta" data-meta="${p.id}"></span><div class="bar sm"><i data-bar="${p.id}"></i></div><button class="btn sm" type="button" data-addph="${p.id}">+ Task</button><button class="btn sm" type="button" data-rmph="${p.id}" ${state.phases.length>1?'':'disabled'} title="Xóa giai đoạn">Xóa</button></div></td></tr>`;
+    html+=list.map(rowHtml).join('')||`<tr><td colspan="${span}" class="empty">Chưa có task trong giai đoạn này.</td></tr>`;
+  });
+  $('#tb').innerHTML=html||`<tr><td colspan="${span}" class="empty">Không có task nào khớp bộ lọc.</td></tr>`;
+  $('#fCount').textContent=`Hiển thị ${shown}/${state.tasks.length} task`;
+  syncMeta();
+}
+function syncMeta(){
+  state.phases.forEach(p=>{const all=state.tasks.filter(k=>k.phase===p.id),x=pct(all);
+    const m=document.querySelector(`[data-meta="${p.id}"]`),b=document.querySelector(`[data-bar="${p.id}"]`);
+    if(m)m.textContent=`${all.filter(k=>k.status==='done').length}/${all.length} task · ${x}%`;if(b)b.style.width=x+'%'});
+}
+function updateRow(tr,k){
+  const s=tr.querySelector('[data-f=status]');if(s){s.value=k.status;s.className='pill s-'+k.status}
+  const p=tr.querySelector('[data-f=priority]');if(p)p.className='pill p-'+k.priority;
+  const r=tr.querySelector('.rel');if(r){r.textContent=k.due&&k.status!=='done'?rel(k.due):'';r.className='rel'+(k.status==='overdue'?' late':'')}
+  const d=tr.querySelector('[data-f=due]');if(d)d.value=k.due||'';
+}
+function renderMeta(){
+  const t=$('#mTitle'),e=$('#mEye');
+  if(document.activeElement!==t)t.textContent=state.meta.title;
+  if(document.activeElement!==e)e.textContent=state.meta.eyebrow;
+  document.title=state.meta.title||'Task Tracker';
+}
+function renderAll(){normalize();renderMeta();renderFilters();renderDash();renderHead();renderTable()}
+
+/* Xác nhận hai lần cho thao tác xóa (không dùng confirm) */
+function arm(btn,label,fn){
+  if(btn.dataset.armed){fn();return}
+  const o=btn.textContent;btn.dataset.armed='1';btn.textContent=label;btn.classList.add('danger');
+  setTimeout(()=>{if(btn.isConnected){delete btn.dataset.armed;btn.textContent=o;btn.classList.remove('danger')}},3000);
+}
+
+/* Sự kiện bảng */
+$('#tb').addEventListener('change',e=>{
+  const el=e.target;
+  if(el.dataset.ph){const p=state.phases.find(x=>x.id===el.dataset.ph);p.name=el.value.trim()||p.name;el.value=p.name;save();renderFilters();renderDash();return}
+  const tr=el.closest('tr[data-row]');if(!tr)return;
+  if(el.dataset.x){const k=state.tasks.find(x=>x.id===tr.dataset.row);k.extra=k.extra||{};k.extra[el.dataset.x]=el.value;save();return}
+  if(!el.dataset.f)return;
+  const k=state.tasks.find(x=>x.id===tr.dataset.row),f=el.dataset.f;
+  if(f==='name'&&!el.value.trim()){el.value=k.name;return}
+  k[f]=el.value;normalize();save();
+  if(f==='status'){renderAll();return}
+  updateRow(tr,k);syncMeta();renderDash();if(f==='owner')renderFilters();
+});
+$('#tb').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.del)arm(b,'Xóa?',()=>{state.tasks=state.tasks.filter(k=>k.id!==b.dataset.del);save();renderAll()});
+  else if(b.dataset.addph)openTask(b.dataset.addph);
+  else if(b.dataset.rmph){const id=b.dataset.rmph,c=state.tasks.filter(k=>k.phase===id).length;
+    arm(b,c?`Xóa cả ${c} task?`:'Xóa?',()=>{state.phases=state.phases.filter(p=>p.id!==id);state.tasks=state.tasks.filter(k=>k.phase!==id);if(filters.phase===id)filters.phase='';save();renderAll()})}
+});
+[['#fPh','phase'],['#fOw','owner'],['#fSt','status'],['#fDu','due']].forEach(a=>$(a[0]).addEventListener('change',e=>{filters[a[1]]=e.target.value;renderTable()}));
+$('#fClear').addEventListener('click',()=>{filters={phase:'',owner:'',status:'',due:''};renderFilters();renderTable()});
+
+/* Hộp thoại thêm task */
+const closeAll=()=>document.querySelectorAll('.ov').forEach(o=>{o.hidden=true});
+function openTask(phase){
+  $('#tPh').innerHTML=state.phases.map((p,i)=>`<option value="${p.id}">${i+1}. ${esc(p.name)}</option>`).join('');
+  $('#tPh').value=phase||(filters.phase||state.phases[0].id);
+  $('#tSt').innerHTML=opt(ST,'todo');$('#tPr').innerHTML=opt(PR,'med');
+  ['#tName','#tDesc','#tOwner','#tNote'].forEach(i=>{$(i).value=''});
+  $('#tStart').value=today();$('#tDue').value=addDays(7);$('#tErr').textContent='';
+  $('#mTask').hidden=false;$('#tName').focus();
+}
+$('#bAdd').addEventListener('click',()=>openTask());
+$('#bAdd2').addEventListener('click',()=>openTask());
+$('#fTask').addEventListener('submit',e=>{
+  e.preventDefault();
+  const s=$('#tStart').value,d=$('#tDue').value,g=i=>$(i).value.trim();
+  if(s&&d&&s>d){$('#tErr').textContent='Deadline phải sau hoặc bằng ngày bắt đầu.';return}
+  state.tasks.push({id:uid(),phase:$('#tPh').value,name:g('#tName'),desc:g('#tDesc'),owner:g('#tOwner'),start:s,due:d,status:$('#tSt').value,priority:$('#tPr').value,note:g('#tNote')});
+  normalize();save();closeAll();renderAll();
+});
+
+/* Hộp thoại quản lý giai đoạn */
+function renderPhList(){
+  const n=state.phases.length;
+  $('#phList').innerHTML=state.phases.map((p,i)=>`<li data-id="${p.id}"><span class="idx">${i+1}</span><input class="cell" style="border-color:var(--line)" value="${esc(p.name)}" aria-label="Tên giai đoạn ${i+1}"><button class="icon" type="button" data-act="up" ${i?'':'disabled'} aria-label="Chuyển lên">↑</button><button class="icon" type="button" data-act="dn" ${i<n-1?'':'disabled'} aria-label="Chuyển xuống">↓</button><button class="icon" type="button" data-act="rm" ${n>1?'':'disabled'}>Xóa</button></li>`).join('');
+}
+$('#bPh').addEventListener('click',()=>{renderPhList();$('#mPh').hidden=false});
+$('#phList').addEventListener('change',e=>{
+  const li=e.target.closest('li'),p=state.phases.find(x=>x.id===li.dataset.id);
+  p.name=e.target.value.trim()||p.name;e.target.value=p.name;save();renderAll();
+});
+$('#phList').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  const id=b.closest('li').dataset.id,i=state.phases.findIndex(p=>p.id===id),act=b.dataset.act;
+  if(act==='up'||act==='dn'){const j=act==='up'?i-1:i+1;[state.phases[i],state.phases[j]]=[state.phases[j],state.phases[i]];save();renderAll();renderPhList()}
+  else if(act==='rm'){const c=state.tasks.filter(k=>k.phase===id).length;
+    arm(b,c?`Xóa cả ${c} task?`:'Xóa?',()=>{state.phases.splice(i,1);state.tasks=state.tasks.filter(k=>k.phase!==id);if(filters.phase===id)filters.phase='';save();renderAll();renderPhList()})}
+});
+function addPhase(){const v=$('#newPh').value.trim();if(!v)return;state.phases.push({id:uid(),name:v});$('#newPh').value='';save();renderAll();renderPhList()}
+$('#addPh').addEventListener('click',addPhase);
+$('#newPh').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addPhase()}});
+
+/* Tên dự án chỉnh sửa trực tiếp */
+[['#mTitle','title'],['#mEye','eyebrow']].forEach(a=>{
+  const el=$(a[0]);
+  el.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();el.blur()}});
+  el.addEventListener('paste',e=>{e.preventDefault();const t=(e.clipboardData||window.clipboardData).getData('text').replace(/\s+/g,' ');document.execCommand('insertText',false,t)});
+  el.addEventListener('blur',()=>{const v=el.textContent.trim();state.meta[a[1]]=v||(a[1]==='title'?'Task Tracker':'');el.textContent=state.meta[a[1]];document.title=state.meta.title;save()});
+});
+
+/* Thêm nhanh giai đoạn */
+$('#bAddPh').addEventListener('click',()=>{
+  const p={id:uid(),name:'Giai đoạn '+(state.phases.length+1)};
+  state.phases.push(p);filters={phase:'',owner:'',status:'',due:''};save();renderAll();
+  const i=document.querySelector(`[data-ph="${p.id}"]`);if(i){i.scrollIntoView({block:'center'});i.focus();i.select()}
+});
+
+/* Hộp thoại cột hiển thị */
+function renderColList(){
+  $('#colList').innerHTML=state.cols.map(c=>`<li data-id="${c.id}"><input type="checkbox" ${c.vis?'checked':''} ${c.id==='name'?'disabled':''} aria-label="Hiển thị cột"><input class="cell" style="border-color:var(--line)" value="${esc(c.label)}" aria-label="Tên cột"><button class="icon" type="button" data-act="rm" ${c.custom?'':'disabled'} title="${c.custom?'Xóa cột':'Cột mặc định chỉ có thể ẩn'}">Xóa</button></li>`).join('');
+}
+$('#bCol').addEventListener('click',()=>{renderColList();$('#mCol').hidden=false});
+$('#colList').addEventListener('change',e=>{
+  const c=state.cols.find(x=>x.id===e.target.closest('li').dataset.id);
+  if(e.target.type==='checkbox')c.vis=e.target.checked;else{c.label=e.target.value.trim()||c.label;e.target.value=c.label}
+  save();renderHead();renderTable();
+});
+$('#colList').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;const id=b.closest('li').dataset.id;
+  arm(b,'Xóa?',()=>{state.cols=state.cols.filter(c=>c.id!==id);state.tasks.forEach(k=>{if(k.extra)delete k.extra[id]});save();renderHead();renderTable();renderColList()});
+});
+function addCol(){const v=$('#newCol').value.trim();if(!v)return;state.cols.push({id:'c'+uid(),label:v,vis:true,custom:true});$('#newCol').value='';save();renderHead();renderTable();renderColList()}
+$('#addCol').addEventListener('click',addCol);
+$('#newCol').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addCol()}});
+
+/* Đóng hộp thoại, khôi phục dữ liệu mẫu, đổi giao diện sáng/tối */
+document.addEventListener('click',e=>{if(e.target.classList.contains('ov')||e.target.closest('[data-close]'))closeAll()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAll()});
+$('#bReset').addEventListener('click',e=>arm(e.currentTarget,'Xác nhận khôi phục?',()=>{state=seed();filters={phase:'',owner:'',status:'',due:''};save();renderAll()}));
+try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',renderCharts)}catch(e){}
+new MutationObserver(renderCharts).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)renderAll()});
+
+$('#today').textContent='Hôm nay, '+new Date().toLocaleDateString('vi-VN',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'})+'. Trạng thái Overdue tự cập nhật theo ngày.';
+renderAll();
+})();
+</script>
